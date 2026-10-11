@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gofile 管理ダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B132B;
+      --card: #1C2541;
+      --border: #3A506B;
+      --text: #FFFFFF;
+      --sub: #8D99AE;
+      --accent: #4CC9F0;
+      --pink: #FE2C55;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "Noto Sans JP", sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 22px; margin-bottom: 8px; color: var(--accent); }
+    p.desc { color: var(--sub); font-size: 13px; margin-bottom: 24px; }
+    
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .btn {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-pink { background: var(--pink); color: #fff; }
+    
+    .folder-item {
+      background: #23304a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 15px;
+    }
+    .folder-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .folder-title { font-size: 16px; font-weight: bold; }
+    .folder-meta { font-size: 12px; color: var(--sub); }
+    
+    .file-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #121929;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+    .file-name { word-break: break-all; }
+    
+    input[type="text"] {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #121929;
+      color: #fff;
+      font-size: 14px;
+      width: 240px;
+      margin-right: 8px;
+    }
+    .actions { display: flex; gap: 8px; align-items: center; }
+  </style>
+</head>
+<body>
+
+  <h1>📂 Gofile 管理ダッシュボード</h1>
+  <p class="desc">あなた専用のコントロールパネルです。ここでフォルダを作成し、動画をアップロードして、共有リンクを他の人に配りましょう。</p>
+
+  <div class="card">
+    <h2 style="font-size: 16px; margin-bottom: 12px;">➕ 新規フォルダ作成</h2>
+    <div style="display: flex; gap: 8px;">
+      <input type="text" id="new-folder-name" placeholder="フォルダ名（例: 晒し動画まとめ①）">
+      <button class="btn" onclick="createFolder()">作成する</button>
+    </div>
+  </div>
+
+  <div id="folders-container"></div>
+
+  <script>
+    // ブラウザのLocalStorageに保存（PC/スマホで同期したい場合は後々Firebase等に拡張可能ですが、まずはこの端末で管理できます）
+    let allFolders = JSON.parse(localStorage.getItem('gofile_all_folders')) || [];
+
+    // 初期データがない場合はサンプルを作成
+    if (allFolders.length === 0) {
+      allFolders.push({
+        id: 'folder_' + Date.now(),
+        name: 'gbgl (メイン)',
+        date: '2026年10月12日 00:00',
+        files: [
+          { name: "001（z106）.MP4", url: "001（z106）.MP4", size: "1.6 MB", type: "video" }
+        ]
+      });
+      saveAndRender();
+    }
+
+    function saveAndRender() {
+      localStorage.setItem('gofile_all_folders', JSON.stringify(allFolders));
+      renderAdmin();
+    }
+
+    function createFolder() {
+      const input = document.getElementById('new-folder-name');
+      const name = input.value.trim();
+      if (!name) return alert('フォルダ名を入力してください');
+
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+      allFolders.push({
+        id: 'folder_' + Date.now(),
+        name: name,
+        date: dateStr,
+        files: []
+      });
+
+      input.value = '';
+      saveAndRender();
+    }
+
+    function deleteFolder(folderId) {
+      if (!confirm('このフォルダを削除しますか？')) return;
+      allFolders = allFolders.filter(f => f.id !== folderId);
+      saveAndRender();
+    }
+
+    function addFiles(folderId, event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      const folder = allFolders.find(f => f.id === folderId);
+      if (!folder) return;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileUrl = URL.createObjectURL(file);
+        const fileSizeMb = (file.size / (1024 * 1024)).toFixed(1) + " MB";
+        const isVideo = file.type.startsWith('video') || file.name.match(/\.(mp4|mov|webm)$/i);
+
+        folder.files.push({
+          name: file.name,
+          url: fileUrl,
+          size: fileSizeMb,
+          type: isVideo ? "video" : "image"
+        });
+      }
+      saveAndRender();
+      event.target.value = '';
+    }
+
+    function deleteFile(folderId, fileIndex) {
+      const folder = allFolders.find(f => f.id === folderId);
+      if (!folder) return;
+      folder.files.splice(fileIndex, 1);
+      saveAndRender();
+    }
+
+    function copyShareLink(folderId) {
+      // 現在のサイトのドメインから index.html?id=xxx のリンクを自動生成
+      const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+      const shareUrl = baseUrl + "index.html?id=" + folderId;
+      
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("共有リンクをコピーしました！\n\n" + shareUrl);
+      }).catch(err => {
+        prompt("以下のリンクをコピーしてください:", shareUrl);
+      });
+    }
+
+    function renderAdmin() {
+      const container = document.getElementById('folders-container');
+      container.innerHTML = '';
+
+      if (allFolders.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center; color:var(--sub);">フォルダがありません。上で新しく作成してください。</div>`;
+        return;
+      }
+
+      allFolders.forEach(folder => {
+        const item = document.createElement('div');
+        item.className = 'folder-item';
+
+        let filesHtml = '';
+        if (folder.files.length === 0) {
+          filesHtml = `<div style="font-size:12px; color:var(--sub); margin-top:8px;">ファイルがありません。「ファイル追加」から動画をアップロードしてください。</div>`;
+        } else {
+          folder.files.forEach((file, fIdx) => {
+            filesHtml += `
+              <div class="file-row">
+                <span class="file-name">📄 ${file.name} (${file.size})</span>
+                <button class="btn btn-pink" style="padding:4px 10px; font-size:11px;" onclick="deleteFile('${folder.id}', ${fIdx})">削除</button>
+              </div>
+            `;
+          });
+        }
+
+        const fileInputId = 'file_input_' + folder.id;
+
+        item.innerHTML = `
+          <div class="folder-header">
+            <div>
+              <div class="folder-title">📁 ${folder.name}</div>
+              <div class="folder-meta">作成日時: ${folder.date} / ファイル数: ${folder.files.length}個</div>
+            </div>
+            <div class="actions">
+              <input type="file" id="${fileInputId}" style="display:none;" multiple accept="video/*,image/*" onchange="addFiles('${folder.id}', event)">
+              <button class="btn" onclick="document.getElementById('${fileInputId}').click()">＋ ファイル追加</button>
+              <button class="btn" style="background:#3A506B; color:#fff;" onclick="copyShareLink('${folder.id}')">🔗 共有リンクコピー</button>
+              <button class="btn btn-pink" onclick="deleteFolder('${folder.id}')">フォルダ削除</button>
+            </div>
+          </div>
+          <div style="margin-top: 10px;">
+            ${filesHtml}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    renderAdmin();
+  </script>
+</body>
+</html>
