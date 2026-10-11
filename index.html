@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title id="page-title">gbgl - Gofile</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #18213A;
+      --card: #212C4B;
+      --border: #35415E;
+      --btn: #263350;
+      --text: #F1F5F9;
+      --sub: #94A3B8;
+      --yellow: #FFB800;
+      --purple: #A78BFA;
+      --pink: #FB7185;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", "Noto Sans JP", sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      padding: 0;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    body.player-open {
+      overflow: hidden !important;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ===== ヘッダー ===== */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      height: 64px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header h1 { font-size: 18px; font-weight: 700; }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    /* ===== アイコン共通 ===== */
+    .icon { width: 20px; height: 20px; color: var(--sub); stroke-width: 2; }
+    .icon-sm { width: 13px; height: 13px; color: var(--sub); flex-shrink: 0; }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+      color: var(--sub);
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: #2b385e; }
+    .icon-btn.filled {
+      width: 38px;
+      height: 29px;
+      background: var(--btn);
+      border: 1px solid #3A4865;
+    }
+    .icon-btn.filled .icon { color: var(--text); width: 16px; height: 16px; }
+
+    /* ===== フォルダ情報カード ===== */
+    .folder-card {
+      display: flex;
+      gap: 8px;
+      padding: 16px 15px;
+    }
+    .folder-icon {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      background: var(--btn);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+    }
+    .folder-icon .icon { width: 22px; height: 22px; color: var(--yellow); stroke-width: 2.2; }
+
+    .folder-info { flex: 1; min-width: 0; }
+    .folder-name {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      line-height: 20px;
+      color: var(--sub);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #CBD5E1;
+      background: var(--btn);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+    }
+    .badge .icon-sm { width: 12px; height: 12px; }
+
+    .folder-actions {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .folder-actions .icon-btn:not(.filled) { width: 24px; height: 29px; }
+
+    /* ===== ツールバー ===== */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+    }
+    .toolbar-right { display: flex; gap: 4px; }
+
+    /* ===== ファイル一覧 ===== */
+    .file-list { overflow: hidden; }
+    .file-item {
+      display: flex;
+      gap: 10px;
+      padding: 12px 12px 6px;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .file-item:hover { background: #273456; }
+    .file-item + .file-item { border-top: 1px solid var(--border); padding-top: 10px; }
+
+    .checkbox {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      margin-top: 7px;
+      border: 2px solid #64748B;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .file-icon { flex-shrink: 0; margin-top: 4px; }
+    .file-icon .icon { width: 20px; height: 20px; color: var(--purple); }
+    .file-icon.video .icon { color: var(--pink); }
+
+    .file-body { flex: 1; min-width: 0; cursor: pointer; }
+    .file-name {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 2px;
+      word-break: break-all;
+    }
+    .file-meta { gap: 10px; }
+    .file-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+    .preview {
+      display: block;
+      width: 100%;
+      max-width: 245px;
+      aspect-ratio: 1 / 1;
+      margin-top: 8px;
+      margin-bottom: 6px;
+      object-fit: contain;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .file-menu-dropdown {
+      display: none;
+      position: absolute;
+      right: 12px;
+      top: 45px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 100;
+      width: 200px;
+      padding: 6px 0;
+    }
+    .file-menu-dropdown.active { display: block; }
+    .menu-item {
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .menu-item:hover { background-color: #2b385e; }
+    .menu-item svg {
+      width: 16px; height: 16px;
+      stroke: var(--sub); stroke-width: 2;
+      fill: none; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ===== TikTok風プレイヤー画面 ===== */
+    #tiktok-player {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 100%;
+      background-color: #000;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .tiktok-video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+    
+    .back-gofile-btn {
+      position: absolute;
+      top: 14px; left: 14px;
+      z-index: 15;
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff; border: none;
+      width: 32px; height: 32px;
+      border-radius: 50%; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; backdrop-filter: blur(4px);
+    }
+
+    .tt-top-header {
+      position: absolute;
+      top: 0; left: 0; width: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px 14px 12px;
+      z-index: 10;
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 15px; font-weight: 600;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
+    }
+    .tt-nav-tabs {
+      display: flex; gap: 14px; align-items: center;
+      flex-grow: 1; justify-content: space-around; padding: 0 8px;
+    }
+    .tt-tab { cursor: pointer; white-space: nowrap; }
+    .tt-tab.active { color: #fff; border-bottom: 2px solid #fff; padding-bottom: 2px; }
+    .tt-live-icon {
+      border: 1px solid rgba(255,255,255,0.8);
+      padding: 1px 5px; border-radius: 4px; font-size: 11px;
+      display: inline-flex; align-items: center; gap: 2px; color: #fff; flex-shrink: 0;
+    }
+
+    .tt-search-icon {
+      width: 22px; height: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .tt-search-icon svg {
+      width: 18px; height: 18px;
+      stroke: rgba(255, 255, 255, 0.85); stroke-width: 2.2;
+      fill: none; stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .tt-sidebar {
+      position: absolute; right: 12px; bottom: 90px;
+      display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 3;
+    }
+    .tt-action-item {
+      display: flex; flex-direction: column; align-items: center;
+      color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    }
+    .tt-avatar-container { position: relative; margin-bottom: 4px; cursor: pointer; }
+    .tt-avatar {
+      width: 48px; height: 48px; border-radius: 50%; border: 2px solid #fff;
+      background-color: #222; color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: bold;
+    }
+    .tt-follow-badge {
+      position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+      background-color: #fe2c55; color: #fff; width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;
+    }
+    .tt-svg-icon {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
+    }
+
+    .tt-info-container {
+      position: absolute; left: 16px; bottom: 95px; right: 80px; z-index: 3;
+      color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); cursor: pointer;
+    }
+    .tt-username { font-size: 16px; font-weight: bold; margin-bottom: 6px; }
+    .tt-caption { font-size: 14px; line-height: 1.4; margin-bottom: 8px; }
+    .tt-sound { font-size: 13px; display: flex; align-items: center; gap: 6px; opacity: 0.9; }
+
+    .tt-player-controls {
+      position: absolute; bottom: 65px; left: 0; width: 100%;
+      padding: 0 16px; z-index: 5; display: flex; align-items: center; gap: 10px;
+    }
+    .play-pause-btn {
+      background: none; border: none; color: #fff; width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+    .play-pause-btn svg { width: 22px; height: 22px; fill: #ffffff; }
+
+    .seekbar {
+      flex-grow: 1; height: 3px; -webkit-appearance: none;
+      background: rgba(255,255,255,0.3); border-radius: 2px; outline: none; cursor: pointer;
+    }
+    .seekbar::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 10px; height: 10px; background: #fff; border-radius: 50%;
+    }
+    .time-display { font-size: 11px; color: #fff; min-width: 65px; text-align: right; }
+
+    .bottom-nav {
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 60px;
+      background-color: #000; display: flex; justify-content: space-around; align-items: center;
+      z-index: 3; border-top: 1px solid rgba(255,255,255,0.1); padding: 0 8px;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center;
+      color: #8c8c8c; font-size: 11px; cursor: pointer; flex: 1; gap: 3px;
+    }
+    .nav-item svg.ic {
+      width: 22px; height: 22px; fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    }
+    svg.ic.fill { fill: #fff; stroke: #fff; stroke-width: 1; }
+
+    .nav-plus {
+      width: 46px; height: 32px; border-radius: 10px;
+      background: linear-gradient(to right, #25f4ee, #fe2c55);
+      display: flex; align-items: center; justify-content: center; color: #fff;
+      box-shadow: 0 2px 8px rgba(254, 44, 85, 0.4);
+    }
+    .nav-plus svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 2.5; fill: none; }
+
+    .nav-item .dot { position: relative; }
+    .nav-item .dot::after {
+      content: ""; position: absolute; top: -2px; right: -4px;
+      width: 6px; height: 6px; background: #FE2C55; border-radius: 50%;
+    }
+
+    /* モーダルポップアップ */
+    #modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6); z-index: 20000; justify-content: center; align-items: center;
+    }
+    .modal-box {
+      background-color: #ffffff; color: #000000; width: 90%; max-width: 340px;
+      padding: 24px; border-radius: 16px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .modal-icon {
+      width: 56px; height: 56px; background: linear-gradient(135deg, #fe2c55, #ff6b8b);
+      border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      color: white; box-shadow: 0 4px 12px rgba(254, 44, 85, 0.3);
+    }
+    .modal-title { font-size: 18px; font-weight: bold; color: #111; }
+    .modal-points {
+      font-size: 15px; font-weight: bold; color: #fe2c55; background: #fff0f3;
+      padding: 6px 12px; border-radius: 20px; display: inline-block; margin: 4px 0; width: 100%;
+    }
+    .modal-warning { font-size: 14px; font-weight: bold; color: #fe2c55; }
+    .modal-desc { font-size: 13px; color: #555; line-height: 1.5; }
+    .modal-btn {
+      background-color: #fe2c55; color: white; border: none; width: 100%;
+      padding: 12px; border-radius: 25px; font-weight: bold; font-size: 15px;
+      cursor: pointer; margin-top: 4px; box-shadow: 0 4px 12px rgba(254, 44, 85, 0.3);
+      transition: opacity 0.2s;
+    }
+    .modal-btn:hover { opacity: 0.9; }
+
+    /* フッター */
+    .footer {
+      text-align: center; padding: 24px 0; color: var(--sub); font-size: 12px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .footer-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .footer-links a { color: var(--sub); text-decoration: none; }
+    .footer-brand {
+      background: var(--card); padding: 8px 16px; border-radius: 20px;
+      display: inline-flex; align-items: center; gap: 6px; margin: 0 auto;
+      border: 1px solid var(--border); color: #cbd5e1; font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Gofile閲覧画面 -->
+  <div id="gofile-view">
+    <header class="header" onclick="showModal()">
+      <i data-lucide="menu" class="icon" style="cursor: pointer;"></i>
+      <h1 id="header-folder-title">gbgl</h1>
+    </header>
+
+    <main class="container">
+      <section class="card folder-card">
+        <div class="folder-icon">
+          <i data-lucide="folder-open" class="icon"></i>
+        </div>
+        <div class="folder-info">
+          <div class="folder-name" id="display-folder-name">gbgl</div>
+          <div class="meta"><i data-lucide="calendar" class="icon-sm"></i><span id="folder-date">--</span></div>
+          <div class="meta"><i data-lucide="files" class="icon-sm"></i><span id="item-count">--</span> items</div>
+          <span class="badge"><i data-lucide="globe" class="icon-sm"></i>public</span>
+        </div>
+        <div class="folder-actions">
+          <button class="icon-btn filled" onclick="showModal()"><i data-lucide="folder-down" class="icon"></i></button>
+          <button class="icon-btn" onclick="showModal()"><i data-lucide="more-vertical" class="icon"></i></button>
+        </div>
+      </section>
+
+      <section class="card toolbar">
+        <button class="icon-btn" onclick="showModal()"><i data-lucide="square-check" class="icon"></i></button>
+        <div class="toolbar-right">
+          <button class="icon-btn" onclick="showModal()"><i data-lucide="search" class="icon"></i></button>
+          <button class="icon-btn" onclick="showModal()"><i data-lucide="refresh-cw" class="icon"></i></button>
+        </div>
+      </section>
+
+      <section class="card file-list" id="video-list-container"></section>
+
+      <div class="footer">
+        <a href="#" onclick="showModal()" style="color: var(--sub); text-decoration: none;">⚑ Report abuse</a>
+        <div class="footer-links">
+          <a href="#" onclick="showModal()">Home</a>
+          <a href="#" onclick="showModal()">Terms of Service</a>
+          <a href="#" onclick="showModal()">Privacy Policy</a>
+          <a href="#" onclick="showModal()">Contact</a>
+        </div>
+        <div>WOJTEK SAS © 2026 · Made with ❤️ by Gofile Team</div>
+        <div class="folder-brand" onclick="showModal()" style="cursor: pointer;">📁 gofile.io</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- TikTok風プレイヤー画面 -->
+  <div id="tiktok-player">
+    <video id="active-video" class="tiktok-video" playsinline webkit-playsinline x5-playsinline preload="auto"></video>
+    <button class="back-gofile-btn" onclick="closeTikTokPlayer()">＜</button>
+
+    <div class="tt-top-header" onclick="showModal()">
+      <div class="tt-live-icon">LIVE</div>
+      <div class="tt-nav-tabs">
+        <span class="tt-tab">シリーズ</span>
+        <span class="tt-tab">フォロー中</span>
+        <span class="tt-tab">ショップ</span>
+        <span class="tt-tab active">おすすめ</span>
+      </div>
+      <div class="tt-search-icon">
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+    </div>
+
+    <div class="tt-info-container" onclick="showModal()">
+      <div class="tt-username">秘密の晒し屋</div>
+      <div class="tt-caption">限定公開動画コンテンツ #おすすめ</div>
+      <div class="tt-sound">🎵 オリジナル楽曲 - 秘密の晒し屋</div>
+    </div>
+
+    <div class="tt-sidebar">
+      <div class="tt-avatar-container" onclick="showModal()">
+        <div class="tt-avatar">晒</div>
+        <div class="tt-follow-badge">+</div>
+      </div>
+      <div class="tt-action-item" onclick="showModal()">
+        <div class="tt-svg-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>
+        <span id="stat-likes">3,954</span>
+      </div>
+      <div class="tt-action-item" onclick="showModal()">
+        <div class="tt-svg-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="#ffffff"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+        </div>
+        <span id="stat-comments">24</span>
+      </div>
+      <div class="tt-action-item" onclick="showModal()">
+        <div class="tt-svg-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="#ffffff"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+        <span id="stat-saves">1,277</span>
+      </div>
+      <div class="tt-action-item" onclick="showModal()">
+        <div class="tt-svg-icon">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+        </div>
+        <span>シェア</span>
+      </div>
+      <div class="tt-action-item" onclick="showModal()">
+        <div style="width: 34px; height: 34px; background: #222; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 10px;">🎵</div>
+      </div>
+    </div>
+
+    <div class="tt-player-controls">
+      <button id="play-pause-icon" class="play-pause-btn" onclick="togglePlayPause()">
+        <svg id="svg-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <svg id="svg-play" viewBox="0 0 24 24" style="display:none;"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <input type="range" id="video-seekbar" class="seekbar" value="0" min="0" max="100" step="0.1">
+      <span id="time-text" class="time-display">0:00 / 0:00</span>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="nav-item" onclick="showModal()">
+        <svg class="ic fill" viewBox="0 0 24 24"><path d="M3 10.2 12 3l9 7.2V20a1 1 0 0 1-1 1h-5.5v-5.5h-3V21H4a1 1 0 0 1-1-1z"/></svg>
+        ホーム
+      </div>
+      <div class="nav-item" onclick="showModal()">
+        <span class="dot">
+          <svg class="ic fill" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20v-1.2A4.3 4.3 0 0 1 6.8 14.5h4.4a4.3 4.3 0 0 1 4.3 4.3V20z"/><circle cx="17.5" cy="6.5" r="2.6"/><path d="M16 11.4a3.8 3.8 0 0 1 5.5 3.4V16h-3.2"/></svg>
+        </span>
+        友達
+      </div>
+      <div class="nav-item" onclick="showModal()">
+        <div class="nav-plus"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></div>
+      </div>
+      <div class="nav-item" onclick="showModal()">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        メッセージ
+      </div>
+      <div class="nav-item" onclick="showModal()">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        プロフィール
+      </div>
+    </nav>
+  </div>
+
+  <!-- ストア誘導ポップアップ -->
+  <div id="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      </div>
+      <div class="modal-title">ようこそゲストさん。</div>
+      <div class="modal-warning">⚠️ リンク削除の恐れあり！</div>
+      <div class="modal-desc">
+        このページは予告なく削除される可能性があります。<br>
+        アプリをダウンロードして、動画を端末に保存・プレイリストに追加しておきましょう！
+      </div>
+      <div class="modal-points">✨ 今なら、最大200000ポイントゲット ✨</div>
+      <button class="modal-btn" onclick="redirectToStore()">ストアでインストールする</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+    const targetUrl = "https://lite.tiktok.com/t/ZS9D3Lpd4mv1v-mFlcJ/";
+
+    // URLの ?id=xxxx から表示するフォルダIDを取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const folderId = urlParams.get('id');
+
+    // ローカルストレージ（管理画面と共有）からフォルダデータを取得
+    const allFolders = JSON.parse(localStorage.getItem('gofile_all_folders')) || [];
+    let currentFolder = allFolders.find(f => f.id === folderId);
+
+    // フォルダが見つからない場合のデフォルトデータ
+    if (!currentFolder) {
+      currentFolder = {
+        name: "gbgl (サンプル)",
+        date: "2026年10月12日 00:00",
+        files: [
+          { name: "sample.MP4", url: "001（z106）.MP4", size: "1.6 MB", type: "video" }
+        ]
+      };
+    }
+
+    // 画面にデータを反映
+    document.getElementById('page-title').textContent = currentFolder.name + " - Gofile";
+    document.getElementById('header-folder-title').textContent = currentFolder.name;
+    document.getElementById('display-folder-name').textContent = currentFolder.name;
+    document.getElementById('folder-date').textContent = currentFolder.date;
+    document.getElementById('item-count').textContent = currentFolder.files.length;
+
+    const container = document.getElementById('video-list-container');
+    if (currentFolder.files.length === 0) {
+      container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--sub);">このフォルダにはファイルがありません。</div>`;
+    } else {
+      currentFolder.files.forEach((video, index) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        let iconHtml = video.type === 'video' 
+          ? `<div class="file-icon video"><i data-lucide="file-play" class="icon"></i></div>`
+          : `<div class="file-icon"><i data-lucide="file-image" class="icon"></i></div>`;
+
+        item.innerHTML = `
+          <div class="checkbox" onclick="event.stopPropagation(); showModal();"></div>
+          ${iconHtml}
+          <div class="file-body" onclick="openTikTokPlayer('${video.url}', '${video.name}')">
+            <div class="file-name">${video.name}</div>
+            <div class="meta file-meta">
+              <span><i data-lucide="calendar" class="icon-sm"></i>${currentFolder.date}</span>
+              <span>${video.size}</span>
+            </div>
+            <video class="preview" src="${video.url}#t=0.5" preload="metadata" muted playsinline webkit-playsinline></video>
+          </div>
+          <div style="position:relative;">
+            <button class="icon-btn" onclick="toggleMenu(event, ${index})"><i data-lucide="more-vertical" class="icon"></i></button>
+            <div id="menu-dropdown-${index}" class="file-menu-dropdown">
+              <div class="menu-item" onclick="showModal()"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>Preview</div>
+              <div class="menu-item" onclick="showModal()"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Download</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+    lucide.createIcons();
+
+    function toggleMenu(event, index) {
+      event.stopPropagation();
+      document.querySelectorAll('.file-menu-dropdown').forEach((m, i) => { if(i!==index) m.classList.remove('active'); });
+      document.getElementById(`menu-dropdown-${index}`).classList.toggle('active');
+    }
+    window.addEventListener('click', () => {
+      document.querySelectorAll('.file-menu-dropdown').forEach(m => m.classList.remove('active'));
+    });
+
+    const activeVideo = document.getElementById('active-video');
+    const seekbar = document.getElementById('video-seekbar');
+    const timeText = document.getElementById('time-text');
+    const gofileView = document.getElementById('gofile-view');
+    const svgPause = document.getElementById('svg-pause');
+    const svgPlay = document.getElementById('svg-play');
+
+    function getStatsForVideo(filename) {
+      let hash = 0;
+      for (let i = 0; i < filename.length; i++) hash = filename.charCodeAt(i) + ((hash << 5) - hash);
+      const p = Math.abs(hash);
+      return { likes: 2000 + (p % 3001), comments: 15 + (p % 26), saves: 700 + (p % 1301) };
+    }
+
+    function openTikTokPlayer(videoUrl, filename) {
+      window.scrollTo(0, 0);
+      document.body.classList.add('player-open');
+      gofileView.style.display = 'none';
+      activeVideo.src = videoUrl;
+      const stats = getStatsForVideo(filename);
+      document.getElementById('stat-likes').textContent = stats.likes.toLocaleString();
+      document.getElementById('stat-comments').textContent = stats.comments.toLocaleString();
+      document.getElementById('stat-saves').textContent = stats.saves.toLocaleString();
+      document.getElementById('tiktok-player').style.display = 'block';
+      activeVideo.load();
+      activeVideo.play().catch(e => console.log(e));
+      svgPause.style.display = 'block';
+      svgPlay.style.display = 'none';
+    }
+
+    function closeTikTokPlayer() {
+      document.getElementById('tiktok-player').style.display = 'none';
+      gofileView.style.display = 'block';
+      document.body.classList.remove('player-open');
+      activeVideo.pause();
+      activeVideo.src = "";
+    }
+
+    function togglePlayPause() {
+      if (activeVideo.paused) {
+        activeVideo.play();
+        svgPause.style.display = 'block'; svgPlay.style.display = 'none';
+      } else {
+        activeVideo.pause();
+        svgPause.style.display = 'none'; svgPlay.style.display = 'block';
+      }
+    }
+
+    activeVideo.addEventListener('timeupdate', () => {
+      if (!isNaN(activeVideo.duration)) {
+        seekbar.value = (activeVideo.currentTime / activeVideo.duration) * 100;
+        timeText.textContent = formatTime(activeVideo.currentTime) + " / " + formatTime(activeVideo.duration);
+      }
+    });
+
+    seekbar.addEventListener('input', () => {
+      if (!isNaN(activeVideo.duration)) activeVideo.currentTime = (seekbar.value / 100) * activeVideo.duration;
+    });
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+      return m + ":" + (sec < 10 ? "0" : "") + sec;
+    }
+
+    activeVideo.addEventListener('click', showModal);
+    activeVideo.addEventListener('ended', showModal);
+    function showModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+    function redirectToStore() { window.location.href = targetUrl; }
+  </script>
+</body>
+</html>
