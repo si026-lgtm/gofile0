@@ -1,167 +1,213 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gofile 管理ダッシュボード</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0B132B;
-      --card: #1C2541;
-      --border: #3A506B;
-      --text: #FFFFFF;
-      --sub: #8D99AE;
-      --accent: #4CC9F0;
-      --pink: #FE2C55;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: "Inter", "Noto Sans JP", sans-serif;
-      padding: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    h1 { font-size: 22px; margin-bottom: 8px; color: var(--accent); }
-    p.desc { color: var(--sub); font-size: 13px; margin-bottom: 24px; }
-    
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .btn {
-      background: var(--accent);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .btn:hover { opacity: 0.85; }
-    .btn-pink { background: var(--pink); color: #fff; }
-    .btn-sub { background: #3A506B; color: #fff; }
-    
-    .folder-item {
-      background: #23304a;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .folder-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .folder-title { font-size: 16px; font-weight: bold; }
-    .folder-meta { font-size: 12px; color: var(--sub); }
-    
-    .file-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #121929;
-      padding: 10px 12px;
-      border-radius: 6px;
-      margin-top: 6px;
-      font-size: 13px;
-    }
-    .file-name { word-break: break-all; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gofile0 - 管理画面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- ログインフォーム -->
+        <div id="loginSection" class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl max-w-md mx-auto">
+            <h1 class="text-xl font-bold mb-4 text-emerald-400">管理者ログイン</h1>
+            <input type="password" id="passwordInput" placeholder="パスワード" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 mb-4 text-white focus:outline-none focus:border-emerald-500">
+            <button onclick="login()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded transition">ログイン</button>
+            <p id="loginError" class="text-red-400 text-sm mt-2 text-center"></p>
+        </div>
 
-  <h1>📂 Gofile 管理ダッシュボード</h1>
-  <p class="desc">コード内に直接登録されたフォルダとファイルの一覧です。「共有リンクコピー」を押して他者に共有できます。</p>
+        <!-- 管理ダッシュボード -->
+        <div id="dashboardSection" class="hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h1 class="text-xl font-bold text-emerald-400">Gofile0 管理パネル</h1>
+                <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded transition">ログアウト</button>
+            </div>
 
-  <div id="folders-container"></div>
+            <!-- フォルダ作成 -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+                <h2 class="font-bold text-lg">新規フォルダ作成</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="folderNameInput" placeholder="フォルダ名" class="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                    <button onclick="createFolder()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded font-medium transition">作成</button>
+                </div>
+            </div>
 
-  <script>
-    // 🔴 【一元管理データ】index.html と同じ内容をここに書いておきます
-    const SHARED_FOLDERS_DATA = [
-      {
-        id: 'folder_101',
-        name: 'gbgl (サンプル)',
-        date: '2026年10月12日 00:00',
-        files: [
-          { name: "001（z106）.MP4", url: "https://www.w3schools.com/html/mov_bbb.mp4", size: "1.6 MB", type: "video" }
-        ]
-      },
-      {
-        id: 'folder_102',
-        name: '晒し動画まとめ①',
-        date: '2026年10月12日 12:00',
-        files: [
-          { name: "動画サンプル.mp4", url: "https://www.w3schools.com/html/mov_bbb.mp4", size: "2.1 MB", type: "video" },
-          { name: "note画像サンプル.jpg", url: "https://assets.st-note.com/assets/images/site/logo.svg", size: "0.5 MB", type: "image" }
-        ]
-      }
-    ];
+            <!-- アップロード -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+                <h2 class="font-bold text-lg">ファイルアップロード</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <select id="targetFolderSelect" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                        <option value="">フォルダを選択してください</option>
+                    </select>
+                    <input type="file" id="fileInput" multiple class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500">
+                </div>
+                <button onclick="uploadFiles()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded transition">アップロード実行</button>
+                <div id="uploadProgress" class="text-sm text-slate-400 text-center"></div>
+            </div>
 
-    function copyShareLink(folderId) {
-      const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-      const shareUrl = baseUrl + "index.html?id=" + folderId;
-      
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("共有リンクをコピーしました！\n\n" + shareUrl);
-      }).catch(err => {
-        prompt("以下のリンクをコピーしてください:", shareUrl);
-      });
-    }
+            <!-- フォルダ・ファイル一覧 -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+                <h2 class="font-bold text-lg">保存済みデータ一覧</h2>
+                <div id="dataList" class="space-y-4">
+                    <!-- 一覧がここに表示されます -->
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function renderAdmin() {
-      const container = document.getElementById('folders-container');
-      container.innerHTML = '';
+    <script>
+        const WORKER_URL = "https://gofile0-worker.newssokuhou.workers.dev"; // あなたのWorker URL
+        let token = localStorage.getItem('gofile_token') || '';
 
-      SHARED_FOLDERS_DATA.forEach(folder => {
-        const item = document.createElement('div');
-        item.className = 'folder-item';
-
-        let filesHtml = '';
-        if (folder.files.length === 0) {
-          filesHtml = `<div style="font-size:12px; color:var(--sub); margin-top:8px;">ファイルがありません。</div>`;
-        } else {
-          folder.files.forEach((file) => {
-            const icon = file.type === 'video' ? '🎥' : '🖼️';
-            filesHtml += `
-              <div class="file-row">
-                <span class="file-name">${icon} ${file.name} (${file.size})</span>
-                <span style="color:var(--sub); font-size:11px; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.url}</span>
-              </div>
-            `;
-          });
+        if (token) {
+            showDashboard();
         }
 
-        item.innerHTML = `
-          <div class="folder-header">
-            <div>
-              <div class="folder-title">📁 ${folder.name}</div>
-              <div class="folder-meta">日時: ${folder.date} / ファイル数: ${folder.files.length}個</div>
-            </div>
-            <div>
-              <button class="btn btn-sub" onclick="copyShareLink('${folder.id}')">🔗 共有リンクコピー</button>
-            </div>
-          </div>
-          <div>${filesHtml}</div>
-        `;
-        container.appendChild(item);
-      });
-    }
+        async function login() {
+            const password = document.getElementById('passwordInput').value;
+            try {
+                const res = await fetch(`${WORKER_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                token = data.token;
+                localStorage.setItem('gofile_token', token);
+                showDashboard();
+            } catch (err) {
+                document.getElementById('loginError').textContent = err.message;
+            }
+        }
 
-    renderAdmin();
-  </script>
+        function logout() {
+            token = '';
+            localStorage.removeItem('gofile_token');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            loadData();
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch(`${WORKER_URL}/api/folders`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 401) { logout(); return; }
+                const folders = await res.json();
+
+                const select = document.getElementById('targetFolderSelect');
+                select.innerHTML = '<option value="">フォルダを選択してください</option>';
+                const list = document.getElementById('dataList');
+                list.innerHTML = '';
+
+                folders.forEach(folder => {
+                    select.innerHTML += `<option value="${folder.id}">${folder.name}</option>`;
+                    
+                    const shareUrl = `https://si026-lgtm.github.io/gofile0/index.html?${folder.id}`;
+                    
+                    let filesHtml = folder.files.map(f => `
+                        <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded border border-slate-700 text-sm">
+                            <span class="truncate mr-2 text-slate-300">${f.name}</span>
+                            <button onclick="deleteFile('${f.id}')" class="text-red-400 hover:text-red-300 shrink-0">削除</button>
+                        </div>
+                    `).join('');
+
+                    list.innerHTML += `
+                        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="font-bold text-emerald-400">${folder.name}</h3>
+                                    <a href="${shareUrl}" target="_blank" class="text-xs text-blue-400 underline">${shareUrl}</a>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="navigator.clipboard.writeText('${shareUrl}')" class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 text-xs rounded">共有リンクコピー</button>
+                                    <button onclick="deleteFolder('${folder.id}')" class="bg-red-600/80 hover:bg-red-500 px-2.5 py-1 text-xs rounded">フォルダ削除</button>
+                                </div>
+                            </div>
+                            <div class="space-y-1">${filesHtml || '<p class="text-xs text-slate-500">ファイルはありません</p>'}</div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function createFolder() {
+            const name = document.getElementById('folderNameInput').value;
+            if (!name) return;
+            await fetch(`${WORKER_URL}/api/folders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ name })
+            });
+            document.getElementById('folderNameInput').value = '';
+            loadData();
+        }
+
+        async function uploadFiles() {
+            const folderId = document.getElementById('targetFolderSelect').value;
+            const files = document.getElementById('fileInput').files;
+            if (!folderId || files.length === 0) {
+                alert("フォルダとファイルを選択してください");
+                return;
+            }
+
+            const progress = document.getElementById('uploadProgress');
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                progress.textContent = `アップロード中... (${i+1}/${files.length}) ${file.name}`;
+
+                // 1. 署名付きURL取得
+                const urlRes = await fetch(`${WORKER_URL}/api/upload-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ folderId, fileName: file.name, size: file.size, mimeType: file.type })
+                });
+                const { presignedUrl, r2Key } = await urlRes.json();
+
+                // 2. R2へ直接PUTアップロード
+                await fetch(presignedUrl, {
+                    method: 'PUT',
+                    body: file
+                });
+
+                // 3. D1へメタデータ登録
+                await fetch(`${WORKER_URL}/api/files`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ folderId, name: file.name, r2Key, size: file.size, mimeType: file.type })
+                });
+            }
+            progress.textContent = "すべてのアップロードが完了しました！";
+            document.getElementById('fileInput').value = '';
+            loadData();
+        }
+
+        async function deleteFolder(folderId) {
+            if (!confirm("本当にこのフォルダと中のファイルをすべて削除しますか？")) return;
+            await fetch(`${WORKER_URL}/api/folders/${folderId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            loadData();
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm("このファイルを削除しますか？")) return;
+            await fetch(`${WORKER_URL}/api/files/${fileId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            loadData();
+        }
+    </script>
 </body>
 </html>
